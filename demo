@@ -1,0 +1,121 @@
+import streamlit as st
+import pandas as pd
+import requests
+import matplotlib.pyplot as plt
+
+# For AI integration, you could use OpenAI or other AI models.
+import openai
+
+# --- API Key for OpenAI ---
+openai.api_key = 'your-openai-api-key'
+
+# -------------------------
+# 1. App Title and Description
+# -------------------------
+st.title('Meal Steal - Personalized Meal Planner & Grocery Saver')
+st.markdown("""
+    Welcome to Meal Steal! This app helps you create personalized meal plans tailored to your dietary needs and health goals while finding the best grocery deals.
+""")
+
+# -------------------------
+# 2. User Input Section
+# -------------------------
+st.sidebar.header("User Input")
+
+# User Health Information
+age = st.sidebar.number_input("Age", min_value=1, max_value=100)
+gender = st.sidebar.selectbox("Gender", ["Male", "Female", "Other"])
+weight = st.sidebar.number_input("Weight (kg)", min_value=30, max_value=200)
+height = st.sidebar.number_input("Height (cm)", min_value=120, max_value=250)
+goal = st.sidebar.selectbox("Health Goal", ["Weight Loss", "Maintain Weight", "Muscle Gain"])
+dietary_pref = st.sidebar.multiselect("Dietary Preferences", ["Vegetarian", "Vegan", "Gluten-Free", "None"])
+
+# Additional Inputs for Personalization
+allergies = st.sidebar.text_input("Allergies (comma-separated)", "")
+exercise_level = st.sidebar.selectbox("Exercise Level", ["Sedentary", "Lightly Active", "Active", "Very Active"])
+
+st.sidebar.markdown("### Set Meal Plan Duration")
+days = st.sidebar.slider("Meal Plan Duration (days)", 1, 7, 7)
+
+# Submit Button
+if st.sidebar.button("Generate Meal Plan"):
+    # -------------------------
+    # 3. AI-Powered Meal Plan Generation
+    # -------------------------
+    st.header("Your Personalized Meal Plan")
+
+    # Using OpenAI to generate meal plans based on user input
+    prompt = f"""
+    Generate a personalized meal plan for a {age}-year-old {gender} who is {height} cm tall, weighs {weight} kg, with a goal of {goal}. The user prefers {', '.join(dietary_pref)} and is allergic to {allergies}. Their exercise level is {exercise_level}.
+    """
+    
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=500
+    )
+    
+    meal_plan = response.choices[0].text.strip()
+    st.write(meal_plan)
+
+    # -------------------------
+    # 4. Dynamic Grocery List and Price Comparison (Placeholder)
+    # -------------------------
+    st.header("Grocery Price Optimization")
+
+    st.write("Fetching the best deals across major UK supermarkets...")
+
+    # Mockup data for grocery prices (until web scraping or API is integrated)
+    grocery_list = {
+        "Tesco": {"Chicken Breast": 5.0, "Rice (1kg)": 1.5, "Broccoli": 1.2},
+        "Sainsbury's": {"Chicken Breast": 5.2, "Rice (1kg)": 1.6, "Broccoli": 1.3},
+        "Aldi": {"Chicken Breast": 4.8, "Rice (1kg)": 1.3, "Broccoli": 1.0},
+        "Iceland": {"Chicken Breast": 5.1, "Rice (1kg)": 1.4, "Broccoli": 1.1},
+    }
+
+    df_grocery = pd.DataFrame(grocery_list)
+    st.dataframe(df_grocery)
+
+    st.write("The cheapest store for this meal plan is Aldi with a total cost of £7.1")
+
+    # -------------------------
+    # 5. Visualization (Calorie Intake, Macronutrient Breakdown)
+    # -------------------------
+    st.header("Meal Plan Nutrition Stats")
+    
+    # Mockup data for calorie breakdown (you can replace this with real calculations from the AI response)
+    calories = [500, 600, 450, 700]
+    meals = ['Breakfast', 'Lunch', 'Snack', 'Dinner']
+    
+    fig, ax = plt.subplots()
+    ax.bar(meals, calories, color=['green', 'blue', 'orange', 'red'])
+    ax.set_ylabel('Calories')
+    ax.set_title('Calories per Meal')
+    
+    st.pyplot(fig)
+
+    # -------------------------
+    # 6. Download Options (CSV, PDF)
+    # -------------------------
+    st.header("Download Your Meal Plan & Grocery List")
+    
+    # Mockup grocery list to CSV
+    grocery_data = pd.DataFrame({
+        "Item": ["Chicken Breast", "Rice", "Broccoli"],
+        "Price": [4.8, 1.3, 1.0],
+        "Supermarket": ["Aldi", "Aldi", "Aldi"]
+    })
+    
+    @st.cache
+    def convert_df(df):
+        return df.to_csv(index=False).encode('utf-8')
+
+    csv = convert_df(grocery_data)
+
+    st.download_button(
+        label="Download Grocery List as CSV",
+        data=csv,
+        file_name='grocery_list.csv',
+        mime='text/csv',
+    )
+
